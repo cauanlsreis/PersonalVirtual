@@ -5,6 +5,10 @@ import numpy as np
 mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
 
+#Contador de reps
+counter = 0
+stage = None
+
 #Capturando vídeo
 cap = cv2.VideoCapture(0)
 
@@ -59,8 +63,33 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 2, cv2.LINE_AA
                         )
 
+            #Lógica para contagem de repetições
+            if angle > 160:
+               stage = "down"
+            if angle < 40 and stage == "down":
+               stage = "up"
+               counter += 1
+               print(counter)
+
         except:
             pass
+        
+        #Status
+        cv2.rectangle(image, (0,0), (225,73), (245,117,16), -1)
+
+        #Contagem
+        cv2.putText(image, 'REPS', (15,12),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1, cv2.LINE_AA)
+        cv2.putText(image, str(counter),
+                    (10,60),
+                    cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2, cv2.LINE_AA)
+        
+        #Stage
+        cv2.putText(image, 'STAGE', (65,12),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1, cv2.LINE_AA)
+        cv2.putText(image, stage,
+                    (60,60),
+                    cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2, cv2.LINE_AA)
 
         #Renderizando as detecções
         mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
