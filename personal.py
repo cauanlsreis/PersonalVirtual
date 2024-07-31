@@ -5,8 +5,23 @@ import numpy as np
 mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
 
-#VIDEO FEED
+#Capturando vídeo
 cap = cv2.VideoCapture(0)
+
+#Cálculo dos ângulos
+def calculate_angle(a, b, c):
+  a = np.array(a) #Primeiro
+  b = np.array(b) #Meio
+  c = np.array(c) #Final
+
+  radians = np.arctan2(c[1]-b[1], c[0]-b[0]) - np.arctan2(a[1]-b[1], a[0]-b[0])
+  angle = np.abs(radians*180.0/np.pi)
+
+  if angle > 180.0:
+    angle = 360 - angle
+  
+  return angle
+
 #Configurando instância do medipipe
 with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
     while cap.isOpened():
@@ -23,10 +38,27 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
         image.flags.writeable = True
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
+        #Obtendo o tamanho da imagem
+        image_height, image_width, _ = image.shape
+
         #Extraindo os pontos de referência
         try:
             landmarks = results.pose_landmarks.landmark
-            print(landmarks)
+
+            #Pegando coordenadas
+            shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x, landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
+            elbow = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x, landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y]
+            wrist = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x, landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
+
+            #Calculando ângulos
+            angle = calculate_angle(shoulder,elbow,wrist)
+
+            #Visualizando ângulos
+            cv2.putText(image, str(angle),
+                        tuple(np.multiply(elbow, [image_width,image_height]).astype(int)),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 2, cv2.LINE_AA
+                        )
+
         except:
             pass
 
@@ -41,5 +73,6 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
         if cv2.waitKey(10) & 0xFF == ord('q'):
             break
 
-    cap.release()
-    cv2.destroyAllWindows()
+cap.release()
+cv2.destroyAllWindows()
+ 
