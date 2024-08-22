@@ -23,7 +23,7 @@ def calculate_angle(a, b, c):
 
   if angle > 180.0:
     angle = 360 - angle
-  
+
   return angle
 
 #Configurando instância do medipipe
@@ -53,29 +53,35 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
             shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x, landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
             elbow = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x, landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y]
             wrist = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x, landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
+            hip = [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x, landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y]
 
             #Calculando ângulos
-            angle = calculate_angle(shoulder,elbow,wrist)
+            angle_elbow = calculate_angle(shoulder, elbow, wrist)
+            angle_shoulder = calculate_angle(hip, shoulder, elbow)
 
             #Visualizando ângulos
-            cv2.putText(image, str(angle),
+            cv2.putText(image, f'{angle_elbow:.2f}',
                         tuple(np.multiply(elbow, [image_width,image_height]).astype(int)),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 2, cv2.LINE_AA
+                        )
+            cv2.putText(image, f'{angle_shoulder:.2f}',
+                        tuple(np.multiply(shoulder, [image_width,image_height]).astype(int)),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 2, cv2.LINE_AA
                         )
 
             #Lógica para contagem de repetições
-            if angle > 160:
-               stage = "down"
-            if angle < 40 and stage == "down":
-               stage = "up"
-               counter += 1
-               print(counter)
+            if angle_shoulder < 30 and 150 <= angle_elbow <= 180:
+                stage = "down"
+            elif stage == "down" and angle_shoulder < 30 and angle_elbow < 70:
+                stage = "up"
+                counter += 1
+                print(counter)
 
         except:
             pass
-        
+
         #Status
-        cv2.rectangle(image, (0,0), (225,73), (245,117,16), -1)
+        cv2.rectangle(image, (0,0), (250,73), (245,117,16), -1)
 
         #Contagem
         cv2.putText(image, 'REPS', (15,12),
@@ -83,12 +89,12 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
         cv2.putText(image, str(counter),
                     (10,60),
                     cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2, cv2.LINE_AA)
-        
+
         #Stage
-        cv2.putText(image, 'STAGE', (65,12),
+        cv2.putText(image, 'STAGE', (95,12),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1, cv2.LINE_AA)
         cv2.putText(image, stage,
-                    (60,60),
+                    (90,60),
                     cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2, cv2.LINE_AA)
 
         #Renderizando as detecções
@@ -98,10 +104,9 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
                                   )
 
         cv2.imshow('Mediapipe Feed', image)
-        
+
         if cv2.waitKey(10) & 0xFF == ord('q'):
             break
 
 cap.release()
 cv2.destroyAllWindows()
- 
